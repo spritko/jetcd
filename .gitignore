@@ -8,3 +8,31 @@ logs/
 
 # Created by './scripts/run_etcd.sh'
 /external/
+
+### Intelli J
+.idea
+*.iml
+*.ipr
+*.iws
+
+### OS X ###
+.DS_Store
+
+# Java
+.class
+
+build/
+liberty/
+target/
+
+### Generated files ###
+/manifest.yml
+generated-sources/
+
+
+### Python ###
+*.pyc
+
+### Log files ###
+*.log#
+

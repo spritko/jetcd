@@ -1,0 +1,139 @@
+
+buildscript {
+   repositories {
+      maven { url "https://maven.bigdatalab.ibm.com/content/repositories/central/" }
+      maven { url "https://maven.bigdatalab.ibm.com/content/repositories/openblue-release/" }
+      maven { url "https://maven.bigdatalab.ibm.com/content/repositories/ibiblio-central-mirror/" }
+      maven { url "https://plugins.gradle.org/m2/" }
+   }
+   dependencies {
+      classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
+   }
+}
+
+plugins {
+   id "com.google.protobuf" version "0.7.7"
+   id 'com.palantir.git-version' version '0.5.2'
+}
+
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'checkstyle'
+
+
+group = 'com.coreos'
+
+if (!project.hasProperty('nexusUploadPwd')) {
+   if (System.getenv('bigdataMavenRepoPublishPwd') != null) {
+      ext.nexusUploadPwd = System.getenv('bigdataMavenRepoPublishPwd')
+   } else {
+      ext.nexusUploadPwd = ''
+   }
+}
+
+
+if ( "$System.env.BRANCH_NAME" == null ) {
+   version = versionDetails().lastTag+"-SNAPSHOT"
+}
+
+//version = '0.1.0-SNAPSHOT'
+
+description = """Java Client for etcd V3"""
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+repositories {
+
+   maven { url "https://maven.bigdatalab.ibm.com/content/repositories/central/" }
+   maven { url "https://maven.bigdatalab.ibm.com/content/repositories/openblue-release/" }
+   maven { url "https://maven.bigdatalab.ibm.com/content/repositories/ibiblio-central-mirror/" }
+   //maven { url "http://central.maven.org/maven2/" }
+}
+
+configurations {
+   checkstyleConfig
+}
+
+dependencies {
+    compile group: 'io.grpc', name: 'grpc-core', version:gprc_version
+    compile group: 'io.grpc', name: 'grpc-netty', version:gprc_version
+    compile group: 'io.grpc', name: 'grpc-protobuf', version:gprc_version
+    compile group: 'io.grpc', name: 'grpc-stub', version:gprc_version
+    compile group: 'com.google.protobuf', name:'protobuf-java', version:protobuf_version
+    compile group: 'com.google.protobuf', name:'protobuf-java-util', version:protobuf_version
+
+    compile group: 'org.slf4j', name: 'slf4j-api', version:'1.7.21'
+
+    testCompile group: 'org.testng', name: 'testng', version:'6.9.10'
+    testCompile group: 'org.assertj', name: 'assertj-core', version:'3.5.2'
+    testCompile group: 'org.mockito', name: 'mockito-core', version:'1.10.19'
+    testCompile group: 'org.slf4j', name: 'slf4j-simple', version:'1.7.21'
+
+    checkstyleConfig group: 'com.puppycrawl.tools', name: 'checkstyle', version: checkstyles_version, transitive: false
+
+
+
+}
+
+checkstyle {
+   toolVersion = checkstyles_version
+   configFile = resources.text.fromArchiveEntry(configurations.checkstyleConfig, 'google_checks.xml').asFile()
+   reportsDir file("${buildDir}/reports/checkstyle")
+
+   checkstyleMain.enabled = true
+   checkstyleTest.enabled = false
+
+   checkstyleMain.reports {
+      xml.enabled true
+      html.enabled true
+   }
+}
+
+
+protobuf {
+   // Configure the protoc executable
+   protoc {
+      // Download from repositories
+      artifact = "com.google.protobuf:protoc:${protobuf_version}"
+   }
+
+   generatedFilesBaseDir = "$projectDir/generated-sources/src"
+   // Configure the codegen plugins
+   plugins {
+      // Define a plugin with name 'grpc'
+      grpc {
+         artifact = 'io.grpc:protoc-gen-grpc-java:0.9.0'
+      }
+   }
+
+   generateProtoTasks {
+      // all() returns the collection of all protoc tasks
+      all().each { task ->
+         // Here you can configure the task
+         task.builtins {
+            java {
+               //option 'example_option1=true'
+            }
+         }
+
+         task.plugins {
+            // Add grpc output without any option.  grpc must have been defined in the
+            // protobuf.plugins block.
+            grpc {
+               //outputSubDir = 'grpcjava'
+            }
+         }
+      }
+
+      // (Java-only) returns tasks for a sourceSet
+      ofSourceSet('main')
+   }
+
+}

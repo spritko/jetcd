@@ -1,7 +1,27 @@
 language: java
-sudo: false
-script:
-  - scripts/run_etcd.sh 
-  - mvn clean verify
+group: bluezone
 jdk:
-  - oraclejdk8
+- oraclejdk8
+
+cache:
+  directories:
+  - $HOME/.m2
+  - $HOME/.gradle
+
+script:
+- ./gradlew build
+
+deploy:
+ - provider: script
+   skip_cleanup: true
+   script: ./gradlew publishApiJarPublicationToMavenRepository
+   on:
+      branch: master
+
+after_failure:
+- grep -l -E "<(error|failure)" */build/test-results/TEST*.xml | xargs -n1 -t
+  cat
+
+env:
+  global:
+    secure: "cmjutZodF1cIb32Z5vIiRFyIXLa32wXa+84t6F21xpQ02zA0vFugbMG7hzvYdzd7Ul6sFYFQIoOOmdHlm8fGy8mlvQfE5ZEZXj9PujMvjesdnk+l+HG142co8zJRqSx0AZUJvGJ6lPMTccXXjqBOGujJakIBW9mcyMyV+eTxQFd9z+PxwhZ24miuU2b5VmT/yAZ0yXjdKzbaTpAcJBQdkgGF6mCQMtDpAXYXn9xoHXjD8jaEbJjxLZ9KWC9CRFb7RqVdmnER1qispBlbutotLsbQWklEo9X1mK8lzRY36PLAVDbTyHT2AEPIDlqGLgNdQXyhvwvnsTXJkyLVmbLNU01qLMESqyqC/GyAvLvD770A0p9jjH/ZxTKKmjfVDw28auABZo6QVfKmAT3Ufc67gjDFQ8KBCteLr5xDF7XpfTp6c9gbmT1vUNwbQanfKqGMkGdgnKSE0hPNMhojNyzNeTyvyo/yxK6Lo9BNXnNcJjADNTfT/nxvQbOFl0bncF0mVS6+lS0CHF+owPqrkWaZsze4A5WJLi3SYvCtp4DYjXtbf54FEZZnkj0iSKI8J1k/vnrJBW2eK+i1OiOM+Fb7IsEj3a6Rb7+USsdD2zl8vyBcQHD7bHwwbfbbYTaOZrelPN2uVVcJfU3j0j6+Bmor1lo45GE6Yup7qPcCLe3fBIc="
