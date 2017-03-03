@@ -34,7 +34,8 @@ if (!project.hasProperty('nexusUploadPwd')) {
    }
 }
 
-
+// Set version git version
+version gitVersion()
 if ( "$System.env.BRANCH_NAME" == null ) {
    version = versionDetails().lastTag+"-SNAPSHOT"
 }
