@@ -20,6 +20,7 @@ plugins {
 apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: "maven-publish"
 apply plugin: 'checkstyle'
 
 
@@ -78,8 +79,20 @@ dependencies {
 
     checkstyleConfig group: 'com.puppycrawl.tools', name: 'checkstyle', version: checkstyles_version, transitive: false
 
+}
 
+checkstyle {
+   toolVersion = checkstyles_version
+   configFile = resources.text.fromArchiveEntry(configurations.checkstyleConfig, 'google_checks.xml').asFile()
+   reportsDir file("${buildDir}/reports/checkstyle")
 
+   checkstyleMain.enabled = true
+   checkstyleTest.enabled = false
+
+   checkstyleMain.reports {
+      xml.enabled true
+      html.enabled true
+   }
 }
 
 checkstyle {
@@ -137,3 +150,25 @@ protobuf {
    }
 
 }
+
+publishing {
+   repositories {
+      maven {
+         url nexusUploadUrl
+         credentials {
+            username = nexusUploadUser
+            password = nexusUploadPwd
+         }
+      }
+   }
+   publications {
+
+      javaJar(MavenPublication) {
+         from components.java
+      }
+      apiJar(MavenPublication) {
+         from components.java
+      }
+   }
+}
+
