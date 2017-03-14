@@ -37,4 +37,15 @@ public class EtcdHeader {
   public long getCompactRevision() {
     return compactRevision;
   }
+
+  @Override
+  public String toString() {
+    return "EtcdHeader{" +
+            "clusterId=" + clusterId +
+            ", memberId=" + memberId +
+            ", revision=" + revision +
+            ", raftTerm=" + raftTerm +
+            ", compactRevision=" + compactRevision +
+            '}';
+  }
 }

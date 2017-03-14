@@ -9,6 +9,8 @@ import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,6 +25,8 @@ import static com.coreos.jetcd.EtcdUtil.apiToClientHeader;
  * etcd watcher Implementation
  */
 public class EtcdWatchImpl implements EtcdWatch {
+
+  private static final Logger logger = LoggerFactory.getLogger(EtcdWatchImpl.class);
 
   private volatile StreamObserver<WatchRequest> requestStream;
 
@@ -52,8 +56,10 @@ public class EtcdWatchImpl implements EtcdWatch {
     WatchRequest request = optionToWatchCreateRequest(EtcdUtil.byteStringFromByteSequence(key), watchOption);
     WatcherImpl watcher = new WatcherImpl(key, watchOption, callback);
     CompletableFuture<Watcher> waitFuture = new CompletableFuture();
-    this.pendingCreateWatchers.add(new Pair<>(watcher, waitFuture));
-    getRequestStream().onNext(request);
+    synchronized (this) {
+      this.pendingCreateWatchers.add(new Pair<>(watcher, waitFuture));
+      getRequestStream().onNext(request);
+    }
     return waitFuture;
   }
 
@@ -110,9 +116,18 @@ public class EtcdWatchImpl implements EtcdWatch {
     if (this.requestStream == null) {
       synchronized (this) {
         if (this.requestStream == null) {
+          if ( logger.isDebugEnabled()) {
+            logger.debug("Creating new requestStream");
+          }
           StreamObserver<WatchResponse> watchResponseStreamObserver = new StreamObserver<WatchResponse>() {
             @Override
             public void onNext(WatchResponse watchResponse) {
+              if ( logger.isDebugEnabled() ) {
+                logger.debug("onNext watchId:" + watchResponse.getWatchId()
+                        + "  events:" + watchResponse.getEventsList()
+                        + " create:" + watchResponse.getCreated()
+                        + " cancelled:" + watchResponse.getCanceled());
+              }
               if (watchResponse.getCreated()) {
                 processCreate(watchResponse);
               } else if (watchResponse.getCanceled()) {
@@ -124,11 +139,17 @@ public class EtcdWatchImpl implements EtcdWatch {
 
             @Override
             public void onError(Throwable throwable) {
+              if ( logger.isDebugEnabled() ) {
+                logger.debug("onError " + throwable);
+              }
               resume();
             }
 
             @Override
             public void onCompleted() {
+              if ( logger.isDebugEnabled() ) {
+                logger.debug("onCompleted ");
+              }
 
             }
           };
@@ -163,7 +184,10 @@ public class EtcdWatchImpl implements EtcdWatch {
       if (response.getWatchId() == -1 && watcher.callback != null) {
         requestPair.getValue().completeExceptionally(new WatchCreateException("create watcher failed", apiToClientHeader(response.getHeader(), response.getCompactRevision())));
       } else {
-        this.watchers.put(watcher.getWatchID(), watcher);
+        if ( logger.isDebugEnabled() ) {
+          logger.debug("created watcher  ID:" + response.getWatchId() + " watcher" + watcher.getKey().toStringUtf8());
+        }
+        this.watchers.put(response.getWatchId(), watcher);
         watcher.setWatchID(response.getWatchId());
         requestPair.getValue().complete(watcher);
       }
@@ -202,7 +226,10 @@ public class EtcdWatchImpl implements EtcdWatch {
                   watchResponse
                           .getEvents(watchResponse.getEventsCount() - 1)
                           .getKv().getModRevision());
-
+          if ( logger.isDebugEnabled() ) {
+            logger.debug("processEvents WatcherID:" + watchResponse.getWatchId() + " Watcher: " + watcher + " callback:" + watcher.callback);
+            logger.debug("    Key " + watchResponse.getEvents(0).getKv().getKey().toStringUtf8() );
+          }
           if (watcher.callback != null) {
             watcher.callback.onWatch(apiToClientHeader(watchResponse.getHeader(), watchResponse.getCompactRevision()), apiToClientEvents(events));
           }
@@ -239,6 +266,9 @@ public class EtcdWatchImpl implements EtcdWatch {
    * @param response
    */
   private void processCanceled(WatchResponse response) {
+    if ( logger.isDebugEnabled() ) {
+      logger.debug("Cancelled watch " + response.getWatchId() );
+    }
     CompletableFuture<Boolean> cancelFuture = this.pendingCancelFutures.remove(response.getWatchId());
     cancelFuture.complete(Boolean.TRUE);
   }

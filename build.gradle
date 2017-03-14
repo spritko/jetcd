@@ -35,11 +35,18 @@ if (!project.hasProperty('nexusUploadPwd')) {
 }
 
 // Set version git version
+version = gitVersion()
+if ("$System.env.TRAVIS_BRANCH" == 'master' || "$System.env.BRANCH_NAME" == ("master") ) {
+   version = versionDetails().lastTag
+} else {
+   version = versionDetails().lastTag + "-SNAPSHOT"
+}
+/*
 version gitVersion()
 if ( "$System.env.BRANCH_NAME" == null ) {
    version = versionDetails().lastTag+"-SNAPSHOT"
 }
-
+*/
 //version = '0.1.0-SNAPSHOT'
 
 description = """Java Client for etcd V3"""
