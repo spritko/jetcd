@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Interface of watch client
  */
-public interface EtcdWatch {
+public interface EtcdWatch  extends AutoCloseable {
 
 
   /**
@@ -26,6 +26,11 @@ public interface EtcdWatch {
    * @return ListenableFuture watcher
    */
   CompletableFuture<Watcher> watch(ByteSequence key, WatchOption watchOption, WatchCallback callback);
+
+  @Override
+  default void close() {
+
+  }
 
   interface Watcher extends Closeable {
 
