@@ -332,7 +332,6 @@ public class EtcdWatchImpl implements EtcdWatch {
       if (watcher.callback != null) {
         watcher.callback.onResuming();
       }
-      watcher.setResuming(true);
       if ( logger.isDebugEnabled() ) {
         logger.debug(("Resuming watcher for key " + watcher.getKey().toStringUtf8() + " old ID:" + watcher.getWatchID()));
       }
