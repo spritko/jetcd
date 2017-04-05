@@ -110,7 +110,7 @@ public class EtcdKVTest {
         // empty
       }
     }
-    ByteString endKey = ByteString.copyFrom("\0", "UTF-8");
+    ByteString endKey = ByteString.copyFrom("test_keya", "UTF-8"); // all test_keyxxx where x is a digit
     GetOption option = GetOption.newBuilder().withSortField(RangeRequest.SortTarget.KEY)
         .withSortOrder(RangeRequest.SortOrder.DESCEND)
         .withRange(endKey).build();

@@ -4,9 +4,11 @@ import com.google.common.base.Preconditions;
 import io.grpc.Attributes;
 import io.grpc.NameResolver;
 import io.grpc.ResolvedServerInfo;
+import io.grpc.ResolvedServerInfoGroup;
 import io.grpc.internal.SharedResourceHolder;
 import io.grpc.internal.SharedResourceHolder.Resource;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -96,9 +98,10 @@ public abstract class AbstractEtcdNameResolver extends NameResolver {
         savedListener = listener;
       }
 
+      // Should this be a single Group with all servers or 1 group per server info .  For now we will
+      //  put all ServerInfo's into a single group.
       try {
-        List<ResolvedServerInfo> servers = getServers();
-        savedListener.onUpdate(Collections.singletonList(servers), Attributes.EMPTY);
+        savedListener.onUpdate(Arrays.asList(ResolvedServerInfoGroup.builder().addAll(getServers()).build()), Attributes.EMPTY);
       } finally {
         synchronized (AbstractEtcdNameResolver.this) {
           resolving = false;
