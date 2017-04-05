@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,17 +135,34 @@ public class EtcdWatchImpl implements EtcdWatch {
 
   /**
    * empty the old request stream, watchers and resume the old watchers
+   * enpty the pendingCreateFuture and complete these with an exception.
    * empty the pendingCancelFutures as there is no need to cancel, the old request stream has been dead
    */
   private synchronized void resume() {
     this.requestStream = null;
-    WatcherImpl[] resumeWatchers = watchers.values().toArray( new WatcherImpl[watchers.size()] );
+    final List<WatcherImpl>resumeWatchers = new ArrayList<>();
+    resumeWatchers.addAll(watchers.values());
     this.watchers.clear();
+
+    // Make sure any pending creates are dealt with, reflect  creation error to the Futures
+    for ( Pair<WatcherImpl, CompletableFuture<Watcher>> watcherPair : pendingCreateWatchers ) {
+      try {
+        if ( watcherPair.getKey().getLastRevision() > -1 ) {
+          // Watch was already created, this is a resume, so resume again
+          resumeWatchers.add( watcherPair.getKey() );
+        } else {
+          watcherPair.getValue().completeExceptionally(new Exception("Create Failed."));
+        }
+      } catch (Exception exc) {
+        // Ignore
+      }
+    }
+    pendingCreateWatchers.clear();
     for (CompletableFuture<Boolean> watcherCompletableFuture : pendingCancelFutures.values()) {
       watcherCompletableFuture.complete(Boolean.TRUE);
     }
     this.pendingCancelFutures.clear();
-    resumeWatchers(resumeWatchers);
+    resumeWatchers( resumeWatchers.toArray(new WatcherImpl[resumeWatchers.size()] ) );
   }
 
   /**
@@ -399,7 +417,7 @@ public class EtcdWatchImpl implements EtcdWatch {
             .withPrevKV(oldOption.isPrevKV())
             .withProgressNotify(oldOption.isProgressNotify())
             .withRange(oldOption.getEndKey().orElse(null))
-            .withRevision(watcher.getLastRevision() + 1)
+            .withRevision( watcher.getLastRevision() == -1 ? -1 : watcher.getLastRevision() + 1)
             .withResuming(true)
             .build();
   }
