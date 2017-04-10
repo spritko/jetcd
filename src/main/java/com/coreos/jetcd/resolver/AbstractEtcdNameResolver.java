@@ -98,10 +98,11 @@ public abstract class AbstractEtcdNameResolver extends NameResolver {
         savedListener = listener;
       }
 
-      // Should this be a single Group with all servers or 1 group per server info .  For now we will
-      //  put all ServerInfo's into a single group.
       try {
-        savedListener.onUpdate(Arrays.asList(ResolvedServerInfoGroup.builder().addAll(getServers()).build()), Attributes.EMPTY);
+        List<ResolvedServerInfo> servers = getServers();
+        savedListener.onUpdate(
+            Collections.singletonList(ResolvedServerInfoGroup.builder().addAll(servers).build()),
+            Attributes.EMPTY);
       } finally {
         synchronized (AbstractEtcdNameResolver.this) {
           resolving = false;

@@ -61,10 +61,10 @@ public class EtcdLeaseImpl implements EtcdLease {
    */
   private StreamObserver<LeaseKeepAliveResponse> keepAliveResponseStreamObserver;
 
+  /**
+   * Init lease stub.
+   */
   public EtcdLeaseImpl(final ManagedChannel channel, Optional<String> token) {
-    /**
-     * Init lease stub.
-     */
     this.channel = channel;
     this.leaseFutureStub = EtcdClientUtil
         .configureStub(LeaseGrpc.newFutureStub(this.channel), token);

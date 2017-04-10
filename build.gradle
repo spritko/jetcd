@@ -91,7 +91,8 @@ dependencies {
 
 checkstyle {
    toolVersion = checkstyles_version
-   configFile = resources.text.fromArchiveEntry(configurations.checkstyleConfig, 'google_checks.xml').asFile()
+   //configFile = resources.text.fromArchiveEntry(configurations.checkstyleConfig, 'google_checks.xml').asFile()
+   configFile = file("${rootProject.projectDir}/properties/checkstyle.xml")
    reportsDir file("${buildDir}/reports/checkstyle")
 
    checkstyleMain.enabled = true
