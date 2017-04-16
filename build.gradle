@@ -89,13 +89,28 @@ dependencies {
 
 }
 
+sourceSets {
+   main {
+      java {
+         srcDirs "${projectDir}/generated-sources/src/main/grpc"
+         srcDirs "${projectDir}/generated-sources/src/main/java"
+      }
+   }
+}
+
+clean {
+   delete "${projectDir}/generated-sources/"
+}
+
 checkstyle {
    toolVersion = checkstyles_version
    //configFile = resources.text.fromArchiveEntry(configurations.checkstyleConfig, 'google_checks.xml').asFile()
    configFile = file("${rootProject.projectDir}/properties/checkstyle.xml")
    reportsDir file("${buildDir}/reports/checkstyle")
 
-   checkstyleMain.enabled = true
+   //sourceSets [project.sourceSets.checkstyles]
+
+   checkstyleMain.enabled = false
    checkstyleTest.enabled = false
 
    checkstyleMain.reports {
