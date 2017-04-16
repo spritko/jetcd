@@ -348,14 +348,18 @@ public class EtcdWatchImpl implements EtcdWatch {
       if (watcher.callback != null) {
         shouldResume = watcher.callback.onResuming();
       }
+
+      // Make sure we clear the watcher id, as its invalid
+      final long oldId = watcher.getWatchID();
+      watcher.setWatchID(-1);
+
       if ( shouldResume ) {
         synchronized (watcher) {
           watcher.setResuming(true);
         }
         if (logger.isDebugEnabled()) {
-          logger.debug(("Resuming watcher for key " + watcher.getKey().toStringUtf8() + " old ID:" + watcher.getWatchID()));
+          logger.debug(("Resuming watcher for key " + watcher.getKey().toStringUtf8() + " old ID:" + oldId));
         }
-        watcher.setWatchID(-1);
         watch(watcher.getKey(), getResumeWatchOptionWithWatcher(watcher), watcher.callback);
       }
     }
