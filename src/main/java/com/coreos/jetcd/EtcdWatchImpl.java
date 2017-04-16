@@ -276,7 +276,7 @@ public class EtcdWatchImpl implements EtcdWatch {
         requestPair.getValue().completeExceptionally(new WatchCreateException("create watcher failed", apiToClientHeader(response.getHeader(), response.getCompactRevision())));
       } else {
         if ( logger.isDebugEnabled() ) {
-          logger.debug("created watcher  ID:" + response.getWatchId() + " watcher" + watcher.getKey().toStringUtf8());
+          logger.debug("created watcher  ID:" + response.getWatchId() + " watcher key " + watcher.getKey().toStringUtf8());
         }
         this.watchers.put(response.getWatchId(), watcher);
         watcher.setWatchID(response.getWatchId());
@@ -344,17 +344,20 @@ public class EtcdWatchImpl implements EtcdWatch {
    */
   private void resumeWatchers(WatcherImpl[] watchers) {
     for (WatcherImpl watcher : watchers) {
-      synchronized (watcher) {
-        watcher.setResuming(true);
-      }
+      boolean shouldResume = true;
       if (watcher.callback != null) {
-        watcher.callback.onResuming();
+        shouldResume = watcher.callback.onResuming();
       }
-      if ( logger.isDebugEnabled() ) {
-        logger.debug(("Resuming watcher for key " + watcher.getKey().toStringUtf8() + " old ID:" + watcher.getWatchID()));
+      if ( shouldResume ) {
+        synchronized (watcher) {
+          watcher.setResuming(true);
+        }
+        if (logger.isDebugEnabled()) {
+          logger.debug(("Resuming watcher for key " + watcher.getKey().toStringUtf8() + " old ID:" + watcher.getWatchID()));
+        }
+        watcher.setWatchID(-1);
+        watch(watcher.getKey(), getResumeWatchOptionWithWatcher(watcher), watcher.callback);
       }
-      watcher.setWatchID(-1);
-      watch(watcher.getKey(), getResumeWatchOptionWithWatcher(watcher), watcher.callback);
     }
   }
 

@@ -74,6 +74,6 @@ public interface EtcdWatch  extends AutoCloseable {
     /**
      * onResuming will be called when the watcher is on resuming.
      */
-    void onResuming();
+    boolean onResuming();
   }
 }

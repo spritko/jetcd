@@ -57,8 +57,8 @@ public class EtcdWatchTest {
           * onResuming will be called when the watcher is on resuming.
           */
          @Override
-         public void onResuming() {
-
+         public boolean onResuming() {
+            return true;
          }
 
       }).get();
