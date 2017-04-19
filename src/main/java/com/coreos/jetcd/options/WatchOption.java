@@ -1,7 +1,7 @@
 package com.coreos.jetcd.options;
 
 
-import com.coreos.jetcd.data.ByteSequence;
+import com.google.protobuf.ByteString;
 
 import java.util.Optional;
 
@@ -24,12 +24,12 @@ public final class WatchOption {
   public static class Builder {
 
     private long revision = 0L;
-    private Optional<ByteSequence> endKey = Optional.empty();
+    private Optional<ByteString> endKey = Optional.empty();
     private boolean prevKV = false;
-    private boolean progressNotify = false;
+    private boolean progressNotify = false; //TODO probably remove this
     private boolean noPut = false;
     private boolean noDelete = false;
-    private boolean resuming = false;
+    private boolean resuming = false; //TODO probably remove this
 
     private Builder() {
     }
@@ -57,7 +57,7 @@ public final class WatchOption {
      * @param endKey end key
      * @return builder
      */
-    public Builder withRange(ByteSequence endKey) {
+    public Builder withRange(ByteString endKey) {
       this.endKey = Optional.ofNullable(endKey);
       return this;
     }
@@ -124,7 +124,7 @@ public final class WatchOption {
 
   }
 
-  private final Optional<ByteSequence> endKey;
+  private final Optional<ByteString> endKey;
   private final long revision;
   private final boolean prevKV;
   private final boolean progressNotify;
@@ -132,7 +132,7 @@ public final class WatchOption {
   private final boolean noDelete;
   private final boolean resuming;
 
-  private WatchOption(Optional<ByteSequence> endKey,
+  private WatchOption(Optional<ByteString> endKey,
                       long revision,
                       boolean prevKV,
                       boolean progressNotify,
@@ -148,7 +148,7 @@ public final class WatchOption {
     this.resuming = resuming;
   }
 
-  public Optional<ByteSequence> getEndKey() {
+  public Optional<ByteString> getEndKey() {
     return this.endKey;
   }
 

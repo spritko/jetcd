@@ -1,37 +1,33 @@
 package com.coreos.jetcd.data;
 
+import com.coreos.jetcd.api.ResponseHeader;
+
 /**
  * Etcd message header information.
  */
 public class EtcdHeader {
-  private final long clusterId;
-  private final long memberId;
-  private final long revision;
-  private final long raftTerm;
+  private final ResponseHeader responseHeader;
   private final long compactRevision;
 
-  public EtcdHeader(long clusterId, long memberId, long revision, long raftTerm, long compactRevision) {
-    this.clusterId = clusterId;
-    this.memberId = memberId;
-    this.revision = revision;
-    this.raftTerm = raftTerm;
+  public EtcdHeader(ResponseHeader responseHeader, long compactRevision) {
+    this.responseHeader = responseHeader;
     this.compactRevision = compactRevision;
   }
 
   public long getClusterId() {
-    return clusterId;
+    return responseHeader.getClusterId();
   }
 
   public long getMemberId() {
-    return memberId;
+    return responseHeader.getMemberId();
   }
 
   public long getRevision() {
-    return revision;
+    return responseHeader.getRevision();
   }
 
   public long getRaftTerm() {
-    return raftTerm;
+    return responseHeader.getRaftTerm();
   }
 
   public long getCompactRevision() {
@@ -41,10 +37,10 @@ public class EtcdHeader {
   @Override
   public String toString() {
     return "EtcdHeader{" +
-            "clusterId=" + clusterId +
-            ", memberId=" + memberId +
-            ", revision=" + revision +
-            ", raftTerm=" + raftTerm +
+            "clusterId=" + getClusterId() +
+            ", memberId=" + getMemberId() +
+            ", revision=" + getRevision() +
+            ", raftTerm=" + getRaftTerm() +
             ", compactRevision=" + compactRevision +
             '}';
   }
