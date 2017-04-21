@@ -83,7 +83,7 @@ public class EtcdWatchTest {
    @Test(dependsOnMethods = "testWatch")
    public void testWatchPut() throws InterruptedException {
       kvClient.put(key, value);
-      WatchEvent event = eventsQueue.poll(5, TimeUnit.MINUTES);
+      WatchEvent event = eventsQueue.poll(5, TimeUnit.SECONDS);
       test.assertEquals(event.getKeyValue().getKey(), key);
       test.assertEquals(event.getEventType(), WatchEvent.EventType.PUT);
    }

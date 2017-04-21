@@ -16,9 +16,9 @@
 
 package com.coreos.jetcd;
 
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-//import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -28,14 +28,21 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class SerializingExecutor implements Executor {
 	private final Executor sharedPool;
-//	private final ConcurrentLinkedQueue<Runnable> workQueue = new ConcurrentLinkedQueue<>();
-	private final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(128);
+	private final Queue<Runnable> workQueue;
+	private final boolean bounded;
 	private volatile boolean scheduled = false;
 	
 	public SerializingExecutor(Executor parentPool) {
-	    if(parentPool == null) throw new NullPointerException();
-		this.sharedPool = parentPool;
+	    this(parentPool, 0);
 	}
+	
+	public SerializingExecutor(Executor parentPool, int capacity) {
+        if(parentPool == null) throw new NullPointerException();
+        this.sharedPool = parentPool;
+        this.bounded = capacity > 0;
+        this.workQueue = bounded ? new ArrayBlockingQueue<>(capacity)
+                : new ConcurrentLinkedQueue<>();
+    }
 	
 	protected void logTaskUncheckedException(Throwable t) {
 		t.printStackTrace();
@@ -46,8 +53,7 @@ public class SerializingExecutor implements Executor {
 	    @Override public void run() {
             try {
                 for(;;) {
-//                    ConcurrentLinkedQueue<Runnable> wq = workQueue;
-                    BlockingQueue<Runnable> wq = workQueue;
+                    Queue<Runnable> wq = workQueue;
                     Runnable next; // note "this" lock is on Runner instance
                     if((next = wq.poll()) == null) {
                         lock();
@@ -77,11 +83,13 @@ public class SerializingExecutor implements Executor {
 	
 	@Override
 	public void execute(Runnable command) {
-		try {
-            workQueue.put(command);
+	    if(bounded) try {
+            ((ArrayBlockingQueue<Runnable>)workQueue).put(command);
         } catch (InterruptedException e) {
             throw new RuntimeException(e); //TODO TBD
         }
+	    else workQueue.offer(command);
+	        
 		if(!scheduled) {
 			boolean doit = false;
 			runner.lock();

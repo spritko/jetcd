@@ -79,7 +79,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
         this.observerExecutor = executor;
         
         //TODO use same as grpc one
-        this.eventLoop = new SerializingExecutor(executor);
+        this.eventLoop = new SerializingExecutor(executor, 128);
         
         this.ses = executor instanceof ScheduledExecutorService
                 ? (ScheduledExecutorService)executor
@@ -97,7 +97,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
         private final Executor watcherExecutor;
         
         long upToRevision;
-        long etcdWatchId = -1L;
+        long watchId = -1L;
         boolean userCancelled, finished;
         volatile boolean vUserCancelled;
         
@@ -109,7 +109,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
             this.options = options;
             long rev = options.getRevision();
             this.upToRevision = rev - 1;
-            this.watcherExecutor = new SerializingExecutor(parentExecutor);
+            this.watcherExecutor = new SerializingExecutor(parentExecutor, 64);
         }
         
         /**
@@ -160,7 +160,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
         }
         
         public void processCancelledEvent(ResponseHeader responseHeader, long compactRevision) {
-            etcdWatchId = -1L;
+            watchId = -1L;
             if(finished) {
                 //TODO unexpected - log
             } else {
@@ -218,11 +218,11 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
             return;
         }
         
-        if(wrec.etcdWatchId < 0) return;
+        if(wrec.watchId < 0) return;
         // send cancel request
         WatchRequest cancelReq = WatchRequest.newBuilder()
                 .setCancelRequest(WatchCancelRequest.newBuilder()
-                        .setWatchId(wrec.etcdWatchId).build()).build();
+                        .setWatchId(wrec.watchId).build()).build();
         synchronized(this) {
             StreamObserver<WatchRequest> reqStream = getRequestStream();
             if(reqStream != null) {
@@ -249,7 +249,6 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
                 errCounter = 0;
                 processResponse(wr);
             });
-
         }
         @Override
         public void onCompleted() {
@@ -280,7 +279,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
                 if(cancelled || tooOld || etcdId == -1L) { //TODO probably distinguish in err message
                     wrec.processCancelledEvent(wr.getHeader(), wr.getCompactRevision());
                 } else {
-                    wrec.etcdWatchId = etcdId;
+                    wrec.watchId = etcdId;
                     if(activeWatchers.putIfAbsent(etcdId, wrec) == null) {
                         if(wrec.userCancelled) sendCancel(wrec);
                         else {
@@ -350,7 +349,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
             // recreate all the non-cancelled watches
         for(WatcherRecord wrec : pending) {
             if(wrec.finished) continue;
-            wrec.etcdWatchId = -1L;
+            wrec.watchId = -1L;
             boolean cancelled = wrec.userCancelled || closed;
             if(!cancelled) {
                 WatchRequest createReq = wrec.newCreateWatchRequest();

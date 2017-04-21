@@ -13,6 +13,7 @@ public class WatchEvent {
     PUT,
     DELETE,
     UNRECOGNIZED
+    // maybe CAUGHT_UP
     // maybe RECONNECTING
   }
   
