@@ -22,13 +22,15 @@ import org.slf4j.LoggerFactory;
 
 import com.coreos.jetcd.api.Event;
 import com.coreos.jetcd.api.KeyValue;
+import com.coreos.jetcd.api.ResponseHeader;
 import com.coreos.jetcd.api.WatchCancelRequest;
 import com.coreos.jetcd.api.WatchCreateRequest;
 import com.coreos.jetcd.api.WatchGrpc;
 import com.coreos.jetcd.api.WatchRequest;
 import com.coreos.jetcd.api.WatchResponse;
-import com.coreos.jetcd.data.EtcdHeader;
 import com.coreos.jetcd.options.WatchOption;
+import com.coreos.jetcd.watch.RevisionCompactedException;
+import com.coreos.jetcd.watch.WatchCancelledException;
 import com.coreos.jetcd.watch.WatchCreateException;
 import com.coreos.jetcd.watch.WatchEvent;
 import com.coreos.jetcd.watch.WatchEvent.EventType;
@@ -132,7 +134,7 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
             final long newRevision = wr.getHeader().getRevision(), nowUpTo = upToRevision;
             if(wr.getEventsCount() > 0 && newRevision > nowUpTo) {
                 watcherExecutor.execute(() -> {
-                    EtcdHeader etcdHeader = new EtcdHeader(wr);
+                    ResponseHeader etcdHeader = wr.getHeader();
                     try {
                         for(Event event : wr.getEventsList()) {
                             if(vUserCancelled) break;
@@ -163,8 +165,16 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
                 return;
             }
             finished = true;
-            publishCompletionEvent(userCancelled ? null
-                    : new WatchCreateException("TODO", new EtcdHeader(watchResponse)));
+            Exception error = null;
+            if(userCancelled) error = null;
+            else {
+                ResponseHeader header = watchResponse.getHeader();
+                long cRev = watchResponse.getCompactRevision();
+                if(cRev != 0) error = new RevisionCompactedException(header, cRev);
+                else if(watchResponse.getCreated()) error = new WatchCreateException(header);
+                else error = new WatchCancelledException(header);
+            }
+            publishCompletionEvent(error);
         }
 
         @GuardedBy("eventLoop")
@@ -264,39 +274,36 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
 
     @GuardedBy("eventLoop")
     protected void processResponse(WatchResponse wr) {
-        boolean created = wr.getCreated();
-        boolean cancelled = wr.getCanceled();
-        boolean tooOld = wr.getCompactRevision() != 0;
+        boolean cancelled = wr.getCanceled() || wr.getCompactRevision() != 0;
         long watchId = wr.getWatchId();
         WatcherRecord wrec;
-        if(created) {
+        if(wr.getCreated()) {
             wrec = pendingCreate.poll();
             if(wrec == null) {
                 logger.error("State error: received unexpected watch create response: "+wr);
                 //TODO here cancel and forget OR *maybe* close stream and refresh all
                 throw new IllegalStateException();
+            }
+            if(cancelled || watchId == -1L) {
+                wrec.processCancelledResponse(wr);
             } else {
-                if(cancelled || tooOld || watchId == -1L) { //TODO probably distinguish in err message
-                    wrec.processCancelledResponse(wr);
-                } else {
-                    wrec.watchId = watchId;
-                    if(activeWatchers.putIfAbsent(watchId, wrec) == null) {
-                        if(wrec.userCancelled) sendCancel(wrec);
-                        else {
-                            wrec.processWatchEvents(wr);
+                wrec.watchId = watchId;
+                if(activeWatchers.putIfAbsent(watchId, wrec) == null) {
+                    if(wrec.userCancelled) sendCancel(wrec);
+                    else {
+                        wrec.processWatchEvents(wr);
 
-                            //TODO publish "caught up" event now?
-                            //  based on seen revision being caught up to startrevision
-                            // OR "current" rev being earlier than startrevision
-                            // (may not have sent other events)
-                        }
-                    } else {
-                        logger.error("State error: watchId conflict: "+watchId);
-                        //TODO other action TBD (probably cancel existing one)
+                        //TODO publish "caught up" event now?
+                        //  based on seen revision being caught up to startrevision
+                        // OR "current" rev being earlier than startrevision
+                        // (may not have sent other events)
                     }
+                } else {
+                    logger.error("State error: watchId conflict: "+watchId);
+                    //TODO other action TBD (probably cancel existing one)
                 }
             }
-        } else if(cancelled || tooOld) {
+        } else if(cancelled) {
             wrec = activeWatchers.remove(watchId);
             if(wrec != null) {
                 //TODO try to resume on "unexpected" cancellations?
@@ -314,10 +321,10 @@ public class NewEtcdWatchImpl implements EtcdWatch, AutoCloseable {
     }
     
     @GuardedBy("eventLoop")
-    int errCounter = 0;
+    protected int errCounter = 0;
     
     @GuardedBy("this") // (and eventLoop currently)
-    boolean waiting = false;
+    protected boolean waiting = false;
     
     protected void dispatchStreamCompleted(final boolean doErrorProcessing) {
         eventLoop.execute(() -> {

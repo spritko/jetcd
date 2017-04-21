@@ -1,7 +1,7 @@
 package com.coreos.jetcd.watch;
 
 import com.coreos.jetcd.api.KeyValue;
-import com.coreos.jetcd.data.EtcdHeader;
+import com.coreos.jetcd.api.ResponseHeader;
 import com.google.protobuf.ByteString;
 
 /**
@@ -19,13 +19,13 @@ public class WatchEvent {
   
   private final EventType eventType;
   
-  private final EtcdHeader etcdHeader;
+  private final ResponseHeader etcdHeader;
 
   private final KeyValue keyValue;
 
   private final KeyValue prevKV;
 
-  public WatchEvent(EtcdHeader etcdHeader,
+  public WatchEvent(ResponseHeader etcdHeader,
           KeyValue keyValue, KeyValue prevKV, EventType eventType) {
     this.etcdHeader = etcdHeader;
     this.keyValue = keyValue;
@@ -33,7 +33,7 @@ public class WatchEvent {
     this.eventType = eventType;
   }
   
-  public EtcdHeader getEtcdHeader() {
+  public ResponseHeader getEtcdHeader() {
     return etcdHeader;
   }
 
