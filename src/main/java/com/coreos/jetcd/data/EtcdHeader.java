@@ -1,6 +1,7 @@
 package com.coreos.jetcd.data;
 
 import com.coreos.jetcd.api.ResponseHeader;
+import com.coreos.jetcd.api.WatchResponse;
 
 /**
  * Etcd message header information.
@@ -9,6 +10,10 @@ public class EtcdHeader {
   private final ResponseHeader responseHeader;
   private final long compactRevision;
 
+  public EtcdHeader(WatchResponse watchResponse) {
+      this(watchResponse.getHeader(), watchResponse.getCompactRevision());
+    }
+  
   public EtcdHeader(ResponseHeader responseHeader, long compactRevision) {
     this.responseHeader = responseHeader;
     this.compactRevision = compactRevision;
