@@ -9,8 +9,12 @@ public class WatchCancelledException extends Exception {
 
   public final ResponseHeader header;
 
+  public WatchCancelledException(String message, ResponseHeader header) {
+      super(message);
+      this.header = header;
+    }
+  
   public WatchCancelledException(ResponseHeader header) {
-    super("Watch was cancelled by the server unexpectedly");
-    this.header = header;
+    this("Watch was cancelled by the server unexpectedly", header);
   }
 }

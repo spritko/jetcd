@@ -12,7 +12,9 @@ public class WatchEvent {
   public enum EventType {
     PUT,
     DELETE,
-    UNRECOGNIZED
+    UNRECOGNIZED,
+    ESTABLISHED
+    
     // maybe CAUGHT_UP
     // maybe RECONNECTING
   }

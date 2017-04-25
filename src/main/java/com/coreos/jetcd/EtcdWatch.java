@@ -4,6 +4,7 @@ import java.io.Closeable;
 
 import com.coreos.jetcd.options.WatchOption;
 import com.coreos.jetcd.watch.WatchEvent;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 
 import io.grpc.stub.StreamObserver;
@@ -22,13 +23,21 @@ public interface EtcdWatch  extends AutoCloseable {
    * @param key         the key subscribe
    * @param watchOption key option
    * @param events    event stream
-   * @return Closeable close to cancel
+   * @return Watch watch reference
    */
-    Closeable watch(ByteString key, WatchOption watchOption, StreamObserver<WatchEvent> events);
+    Watch watch(ByteString key, WatchOption watchOption, StreamObserver<WatchEvent> events);
   
-  @Override
-  default void close() {
-
+    @Override
+    public void close(); // doesn't throw
+    
+  /**
+   * Call {@link #close()} at any time to cancel the watch. The future will complete
+   * with TRUE when the watch is established or FALSE if it was cancelled prior
+   * to being established.
+   */
+  public interface Watch extends Closeable, ListenableFuture<Boolean> {
+      @Override
+      public void close(); // doesn't throw
   }
   
 }

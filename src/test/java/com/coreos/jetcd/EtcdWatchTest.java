@@ -1,6 +1,7 @@
 package com.coreos.jetcd;
 
 
+import com.coreos.jetcd.EtcdWatch.Watch;
 //import com.coreos.jetcd.data.ByteSequence;
 //import com.coreos.jetcd.data.EtcdHeader;
 import com.coreos.jetcd.exception.AuthFailedException;
@@ -33,7 +34,7 @@ public class EtcdWatchTest {
    private ByteString key = ByteString.copyFromUtf8("test_key");
    private ByteString value = ByteString.copyFromUtf8("test_val");
 //   private EtcdWatchImpl.Watcher watcher;
-   private Closeable watchCloser;
+   private Watch watchCloser;
 
    private Assertion test = new Assertion();
 
@@ -45,7 +46,7 @@ public class EtcdWatchTest {
    }
 
    @Test
-   public void testWatch() throws ExecutionException, InterruptedException {
+   public void testWatch() throws ExecutionException, InterruptedException, TimeoutException {
       WatchOption option = WatchOption.DEFAULT;
       watchCloser = watchClient.watch(key, option, new StreamObserver<WatchEvent>() {
 
@@ -73,7 +74,13 @@ public class EtcdWatchTest {
         }
 
       });
-
+      
+      test.assertFalse(watchCloser.isDone());
+      
+      WatchEvent event = eventsQueue.poll(5, TimeUnit.SECONDS);
+      test.assertEquals(event.getEventType(), WatchEvent.EventType.ESTABLISHED);
+      
+      test.assertTrue(watchCloser.get(4, TimeUnit.SECONDS));
    }
 
    /**
