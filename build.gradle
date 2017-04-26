@@ -39,7 +39,7 @@ version = gitVersion()
 if ("$System.env.TRAVIS_BRANCH" == 'master' || "$System.env.BRANCH_NAME" == ("master") ) {
    version = versionDetails().lastTag
 } else {
-   version = versionDetails().lastTag + "-SNAPSHOT"
+   version = versionDetails().lastTag + "-new-watch-SNAPSHOT"
 }
 /*
 version gitVersion()

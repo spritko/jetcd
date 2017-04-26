@@ -11,6 +11,7 @@ import com.coreos.jetcd.api.PutRequest;
 import com.coreos.jetcd.api.PutResponse;
 import com.coreos.jetcd.api.RangeRequest;
 import com.coreos.jetcd.api.RangeResponse;
+import com.coreos.jetcd.api.TxnRequest;
 import com.coreos.jetcd.api.TxnResponse;
 import com.coreos.jetcd.op.Txn;
 import com.coreos.jetcd.options.CompactOption;
@@ -134,5 +135,11 @@ class EtcdKVImpl implements EtcdKV {
   public ListenableFuture<TxnResponse> commit(Txn txn) {
     checkNotNull(txn, "txn should not be null");
     return this.stub.txn(txn.toTxnRequest());
+  }
+  
+  @Override
+  public ListenableFuture<TxnResponse> txn(TxnRequest txn) {
+    checkNotNull(txn, "txn should not be null");
+    return this.stub.txn(txn);
   }
 }

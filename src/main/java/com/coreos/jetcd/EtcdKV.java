@@ -4,6 +4,7 @@ import com.coreos.jetcd.api.CompactionResponse;
 import com.coreos.jetcd.api.DeleteRangeResponse;
 import com.coreos.jetcd.api.PutResponse;
 import com.coreos.jetcd.api.RangeResponse;
+import com.coreos.jetcd.api.TxnRequest;
 import com.coreos.jetcd.api.TxnResponse;
 import com.coreos.jetcd.op.Txn;
 import com.coreos.jetcd.options.CompactOption;
@@ -58,4 +59,6 @@ public interface EtcdKV {
    * @param txn txn to commit
    */
   ListenableFuture<TxnResponse> commit(Txn txn);
+  
+  ListenableFuture<TxnResponse> txn(TxnRequest txn);
 }

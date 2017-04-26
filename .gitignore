@@ -36,3 +36,4 @@ generated-sources/
 ### Log files ###
 *.log#
 
+/test-output/
