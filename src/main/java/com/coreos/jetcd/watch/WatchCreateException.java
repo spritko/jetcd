@@ -1,17 +1,13 @@
 package com.coreos.jetcd.watch;
 
-
-import com.coreos.jetcd.data.EtcdHeader;
+import com.coreos.jetcd.api.ResponseHeader;
 
 /**
  * Exception thrown when create watcher failed.
  */
-public class WatchCreateException extends Exception {
+public class WatchCreateException extends WatchCancelledException {
 
-  public final EtcdHeader header;
-
-  public WatchCreateException(String cause, EtcdHeader header) {
-    super(cause);
-    this.header = header;
+  public WatchCreateException(ResponseHeader header) {
+    super("Watch creation failed", header);
   }
 }

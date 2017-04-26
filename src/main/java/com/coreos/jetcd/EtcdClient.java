@@ -66,7 +66,7 @@ public class EtcdClient {
     this.maintenanceClient = Suppliers.memoize(() -> new EtcdMaintenanceImpl(channel, token));
     this.clusterClient = Suppliers.memoize(() -> new EtcdClusterImpl(channel, token));
     this.leaseClient = Suppliers.memoize(() -> new EtcdLeaseImpl(channel, token));
-    this.watchClient =  Suppliers.memoize(() -> new EtcdWatchImpl(channel, token));
+    this.watchClient =  Suppliers.memoize(() -> new NewEtcdWatchImpl(channel, token));
   }
 
   // ************************

@@ -1,7 +1,7 @@
 package com.coreos.jetcd.options;
 
 
-import com.coreos.jetcd.data.ByteSequence;
+import com.google.protobuf.ByteString;
 
 import java.util.Optional;
 
@@ -24,12 +24,11 @@ public final class WatchOption {
   public static class Builder {
 
     private long revision = 0L;
-    private Optional<ByteSequence> endKey = Optional.empty();
+    private Optional<ByteString> endKey = Optional.empty();
     private boolean prevKV = false;
-    private boolean progressNotify = false;
+    private boolean progressNotify = false; //TODO probably remove this
     private boolean noPut = false;
     private boolean noDelete = false;
-    private boolean resuming = false;
 
     private Builder() {
     }
@@ -57,7 +56,7 @@ public final class WatchOption {
      * @param endKey end key
      * @return builder
      */
-    public Builder withRange(ByteSequence endKey) {
+    public Builder withRange(ByteString endKey) {
       this.endKey = Optional.ofNullable(endKey);
       return this;
     }
@@ -95,11 +94,6 @@ public final class WatchOption {
       return this;
     }
 
-    public Builder withResuming(boolean resuming) {
-      this.resuming = resuming;
-      return this;
-    }
-
     /**
      * filter out delete event in server side
      *
@@ -118,37 +112,33 @@ public final class WatchOption {
               prevKV,
               progressNotify,
               noPut,
-              noDelete,
-              resuming);
+              noDelete);
     }
 
   }
 
-  private final Optional<ByteSequence> endKey;
+  private final Optional<ByteString> endKey;
   private final long revision;
   private final boolean prevKV;
   private final boolean progressNotify;
   private final boolean noPut;
   private final boolean noDelete;
-  private final boolean resuming;
 
-  private WatchOption(Optional<ByteSequence> endKey,
+  private WatchOption(Optional<ByteString> endKey,
                       long revision,
                       boolean prevKV,
                       boolean progressNotify,
                       boolean noPut,
-                      boolean noDelete,
-                      boolean resuming) {
+                      boolean noDelete) {
     this.endKey = endKey;
     this.revision = revision;
     this.prevKV = prevKV;
     this.progressNotify = progressNotify;
     this.noPut = noPut;
     this.noDelete = noDelete;
-    this.resuming = resuming;
   }
 
-  public Optional<ByteSequence> getEndKey() {
+  public Optional<ByteString> getEndKey() {
     return this.endKey;
   }
 
@@ -188,9 +178,5 @@ public final class WatchOption {
    */
   public boolean isNoDelete() {
     return noDelete;
-  }
-
-  public boolean isResuming() {
-    return resuming;
   }
 }
